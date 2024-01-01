@@ -1,5 +1,5 @@
-import re
 from enum import Enum, auto
+import sys
 
 class Tokens(Enum):
     PLUS        = auto()
@@ -19,6 +19,7 @@ class _Lexer:
         self.source = source
         self.index = 0
         self.tokens = []
+        self.error_msg = ''
     
     def advance(self):
         self.index += 1
@@ -63,6 +64,14 @@ class _Lexer:
             self.tokens.append(token)
             token = self.scan_token()
 
+    def string_literal(self):
+        self.advance()
+        literal = ''
+        while not self.at_end() and self.current() != '"':
+            literal += self.current()
+            self.advance()
+        return literal
+
     def scan_token(self):
         if self.at_end():
             return Tokens.EOF
@@ -76,7 +85,7 @@ class _Lexer:
         match c:
             case ' ' | '\n' | '\t':
                 self.consume_white_space()
-                token = self.scan_token()
+                return self.scan_token()
             case '"':
                 token = self.string_literal()
             case '+':
@@ -92,11 +101,20 @@ class _Lexer:
             case ')':
                 token = Tokens.RIGHT_PAREN
 
+            case _:
+                self.error_msg = f"Unexpected char '{c}'"
+                raise RuntimeError
+
+
         self.advance()
         return token 
 
 
 def tokenize(s: str) -> list[Tokens]:
     lexer = _Lexer(s)
-    lexer.tokenize()
+    try:
+        lexer.tokenize()
+    except RuntimeError:
+        print(lexer.error_msg, file=sys.stderr)
+        sys.exit(0)
     return lexer.tokens
