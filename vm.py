@@ -6,7 +6,7 @@ def interpret(code: list):
     while i < len(code):
         op = code[i]
         match op:
-            case OpCode.NUM: 
+            case OpCode.NUMBER: 
                 stack.append(code[i + 1])
                 i += 1
             case OpCode.TRUE:
@@ -62,7 +62,5 @@ def interpret(code: list):
 
             case OpCode.PRINT:
                 print(stack.pop())
-            case OpCode.JUMP:
-                i += code[i + 1] + 1
 
         i += 1 

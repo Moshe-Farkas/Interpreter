@@ -5,7 +5,7 @@ class OpCode(Enum):
     SUB           = auto()
     MUL           = auto()
     DIV           = auto()
-    NUM           = auto()
+    NUMBER        = auto()
     TRUE          = auto()
     FALSE         = auto()
     MODULO        = auto()

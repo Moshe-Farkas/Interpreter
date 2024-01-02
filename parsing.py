@@ -1,5 +1,5 @@
 from instructions import OpCode
-from tokenization import Tokens
+from tokenization import TokenType
 import sys
 
 class _Parser:
@@ -12,16 +12,21 @@ class _Parser:
         self.code.append(op)
 
     def at_end(self):
-        return self.match(Tokens.EOF)
+        return self.match(TokenType.EOF)
+    
+    def check(self, tok_type):
+        if self.at_end():
+            return False
+        return self.tokens[self.index].tok_type == tok_type
 
     def parse(self):
         while not self.at_end():
             self.statement()
 
     def statement(self):
-        if self.match(Tokens.IF):
+        if self.match(TokenType.IF):
             self.if_statement()
-        elif self.match(Tokens.PRINT):
+        elif self.match(TokenType.PRINT):
             self.expression()
             self.emit_op(OpCode.PRINT)
 
@@ -36,114 +41,118 @@ class _Parser:
         self.emit_op(-1)        # placeholder offset
         start_index = len(self.code)
 
-        if self.match(Tokens.ARROW):
-            self.statement()
-            self.back_patch(start_index)
-
-    def patch_loop(self, condition_index):
-        # need to patch the offset after jump to point to the start of the condition
-        
-        end_index = len(self.code)
-        self.code[end_index - (end_index - condition_index) - 1] = -(end_index - condition_index)
+        # if self.match(TokenType.ARROW):
+        self.consume(TokenType.ARROW, "Expected '->' after if.")
+        self.statement()
+        self.back_patch(start_index)
             
     def back_patch(self, start_index):
         end_index = len(self.code)
         self.code[end_index - (end_index - start_index) - 1] = end_index - start_index
 
-    def match(self, *args):
+    def match(self, *token_types):
         if self.index >= len(self.tokens):
             return False
-        for arg in args:
-            if self.tokens[self.index] == arg:
+        for tok_type in token_types:
+            if self.tokens[self.index].tok_type == tok_type:
                 self.index += 1
                 return True
         return False
+    
+    def consume(self, tok_type: TokenType, err_msg):
+        if not self.check(tok_type):
+            print(err_msg, file=sys.stderr)
+        self.match(tok_type)
+        
+        # if not self.match(tok_type):
+        #     print(err_msg, file=sys.stderr)
+        #     sys.exit(0)
 
     def expression(self):
         self.Or()
     
     def Or(self):
         self.And()
-        while self.match(Tokens.OR):
+        while self.match(TokenType.OR):
             self.And()
             self.emit_op(OpCode.OR)
 
     def And(self):
         self.equality()
-        while self.match(Tokens.AND):
+        while self.match(TokenType.AND):
             self.equality()
             self.emit_op(OpCode.AND)
     
     def equality(self):
         self.comparision()
-        while self.match(Tokens.EQUAL_EQUAL, Tokens.NOT_EQUAL):
+        while self.match(TokenType.EQUAL_EQUAL, TokenType.NOT_EQUAL):
             operator = self.tokens[self.index - 1]
             self.comparision()
             op = None
-            match operator:
-                case Tokens.EQUAL_EQUAL:
+            match operator.tok_type:
+                case TokenType.EQUAL_EQUAL:
                     op = OpCode.EQUAL_EQUAL
-                case Tokens.NOT_EQUAL:
+                case TokenType.NOT_EQUAL:
                     op = OpCode.NOT_EQUAL
             self.emit_op(op)
     
     def comparision(self):
         self.term()
-        while self.match(Tokens.GREATER, Tokens.GREATER_EQUAL,
-                         Tokens.LESS, Tokens.LESS_EQUAL):
+        while self.match(TokenType.GREATER, TokenType.GREATER_EQUAL,
+                         TokenType.LESS, TokenType.LESS_EQUAL):
             operator = self.tokens[self.index - 1]
             self.term()
             op = None
-            match operator:
-                case Tokens.GREATER:
+            match operator.tok_type:
+                case TokenType.GREATER:
                     op = OpCode.GREATER
-                case Tokens.GREATER_EQUAL:
+                case TokenType.GREATER_EQUAL:
                     op = OpCode.GREATER_EQUAL
-                case Tokens.LESS:
+                case TokenType.LESS:
                     op = OpCode.LESS
-                case Tokens.LESS_EQUAL:
+                case TokenType.LESS_EQUAL:
                     op = OpCode.LESS_EQUAL
 
             self.emit_op(op)
     
     def term(self):
         self.factor()
-        while self.match(Tokens.PLUS, Tokens.MINUS):
+        while self.match(TokenType.PLUS, TokenType.MINUS):
             operator = self.tokens[self.index - 1]
             self.factor()
 
             op = None
-            match operator:
-                case Tokens.PLUS: 
+            match operator.tok_type:
+                case TokenType.PLUS: 
                     op = OpCode.ADD
-                case Tokens.MINUS: 
+                case TokenType.MINUS: 
                     op = OpCode.SUB
             
             self.emit_op(op)
         
     def factor(self):
         self.unary()
-        while self.match(Tokens.STAR, Tokens.SLASH, Tokens.PERCENT):
+        while self.match(TokenType.STAR, TokenType.SLASH, TokenType.PERCENT):
             operator = self.tokens[self.index - 1]
             self.unary()
             op = None
-            match operator:
-                case Tokens.SLASH:
+            match operator.tok_type:
+                case TokenType.SLASH:
                     op = OpCode.DIV
-                case Tokens.STAR:
+                case TokenType.STAR:
                     op = OpCode.MUL
-                case Tokens.PERCENT:
+                case TokenType.PERCENT:
                     op = OpCode.MODULO
 
             self.emit_op(op)
     
     def unary(self):
-        while self.match(Tokens.MINUS):
+        while self.match(TokenType.MINUS):
             operator = self.tokens[self.index - 1]
             self.unary()
             op = None
-            match operator:
-                case Tokens.MINUS:
+            match operator.tok_type:
+                case TokenType.MINUS:
                     op = OpCode.NEGATION
 
             self.emit_op(op)
@@ -151,24 +160,27 @@ class _Parser:
         self.primary()
             
     def primary(self):
-        if self.match(Tokens.LEFT_PAREN):
+        if self.match(TokenType.LEFT_PAREN):
             self.expression()
-            self.index += 1
-            # self.consume(')', "Expect ')' after grouping.")
+            self.consume(TokenType.RIGHT_PAREN, "Expect ')' after grouping.")
         if self.index >= len(self.tokens):
             return
         
-        if self.match(Tokens.FALSE):
+        if self.match(TokenType.FALSE):
             self.emit_op(OpCode.FALSE)
-        elif self.match(Tokens.TRUE):
+        elif self.match(TokenType.TRUE):
             self.emit_op(OpCode.TRUE)
-        elif isinstance(self.tokens[self.index], float):
-            self.emit_op(OpCode.NUM)
-            self.emit_op(self.tokens[self.index])
-            self.index += 1
+        elif self.match(TokenType.NUMBER):
+            token = self.tokens[self.index - 1]
+            self.emit_op(OpCode.NUMBER)
+            self.emit_op(token.value)
+        elif self.match(TokenType.EOF):
+            return
 
         else:
-            print('Expected somthing.')
+            print(self.tokens[self.index])
+            print('Exression expected.')
+            # sys.exit(0)
     
     def print_code(self):
         for op in self.code:
