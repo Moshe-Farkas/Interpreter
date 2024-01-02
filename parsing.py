@@ -1,5 +1,6 @@
 from instructions import OpCode
 from tokenization import Tokens
+import sys
 
 class _Parser:
     def __init__(self, tokens: list):
@@ -10,8 +11,44 @@ class _Parser:
     def emit_op(self, op):
         self.code.append(op)
 
+    def at_end(self):
+        return self.match(Tokens.EOF)
+
     def parse(self):
+        while not self.at_end():
+            self.statement()
+
+    def statement(self):
+        if self.match(Tokens.IF):
+            self.if_statement()
+        elif self.match(Tokens.PRINT):
+            self.expression()
+            self.emit_op(OpCode.PRINT)
+
+        else:
+            print("Unexpected statement type.", file=sys.stderr)
+            sys.exit(0)
+    
+    def if_statement(self):
         self.expression()
+        
+        self.emit_op(OpCode.JUMP_FALSE)
+        self.emit_op(-1)        # placeholder offset
+        start_index = len(self.code)
+
+        if self.match(Tokens.ARROW):
+            self.statement()
+            self.back_patch(start_index)
+
+    def patch_loop(self, condition_index):
+        # need to patch the offset after jump to point to the start of the condition
+        
+        end_index = len(self.code)
+        self.code[end_index - (end_index - condition_index) - 1] = -(end_index - condition_index)
+            
+    def back_patch(self, start_index):
+        end_index = len(self.code)
+        self.code[end_index - (end_index - start_index) - 1] = end_index - start_index
 
     def match(self, *args):
         if self.index >= len(self.tokens):
@@ -120,14 +157,30 @@ class _Parser:
             # self.consume(')', "Expect ')' after grouping.")
         if self.index >= len(self.tokens):
             return
-
-        if isinstance(self.tokens[self.index], float):
+        
+        if self.match(Tokens.FALSE):
+            self.emit_op(OpCode.FALSE)
+        elif self.match(Tokens.TRUE):
+            self.emit_op(OpCode.TRUE)
+        elif isinstance(self.tokens[self.index], float):
             self.emit_op(OpCode.NUM)
             self.emit_op(self.tokens[self.index])
             self.index += 1
+
+        else:
+            print('Expected somthing.')
+    
+    def print_code(self):
+        for op in self.code:
+            print(op)
 
 
 def parse(tokens: list):
     parser = _Parser(tokens)
     parser.parse()
+
+    # parser.print_code()
+    # print('*' * 50)
+    # print('\n')
+
     return parser.code

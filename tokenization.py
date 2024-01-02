@@ -20,9 +20,25 @@ class Tokens(Enum):
     PERCENT         = auto()
     TRUE            = auto()
     FALSE           = auto()
+    IF              = auto()
+    IDENTIFIER      = auto()
     EOF             = auto()
 
+    # temp 
+    ARROW           = auto()
+    PRINT           = auto()
+
+
+    # if expr -> (expr to run)
+
 class _Lexer:
+    keywords = {
+        "print": Tokens.PRINT,
+        "if":    Tokens.IF,
+        "false": Tokens.FALSE,
+        "true":  Tokens.TRUE,
+    }
+
     def __init__(self, source: str):
         self.source = source
         self.index = 0
@@ -34,9 +50,6 @@ class _Lexer:
     
     def current(self):
         return self.source[self.index]
-
-    def at_end(self):
-        return self.index >= len(self.source)
     
     def peek_next(self):
         self.advance()
@@ -65,16 +78,25 @@ class _Lexer:
 
         self.index -= 1 
         return float(num)
-        
 
     def keyword_or_identifier(self):
-        pass
+        iden = ''
+        while not self.at_end() and self.current().isalpha():
+            iden += self.current()
+            self.advance()
+        
+        if iden in self.keywords:
+            return self.keywords[iden]
+        else:
+            print('should not be here')
+            return Tokens.IDENTIFIER
     
     def tokenize(self):
         token = self.scan_token()
         while token != Tokens.EOF:
             self.tokens.append(token)
             token = self.scan_token()
+        self.tokens.append(Tokens.EOF)
 
     def string_literal(self):
         self.advance()
@@ -95,6 +117,9 @@ class _Lexer:
             token = self.keyword_or_identifier()
         
         match c:
+            case '\n':
+                self.advance()
+                return self.scan_token()
             case ' ' | '\n' | '\t':
                 self.consume_white_space()
                 return self.scan_token()
@@ -103,7 +128,11 @@ class _Lexer:
             case '+':
                 token = Tokens.PLUS
             case '-':
-                token = Tokens.MINUS
+                if self.peek_next() == '>':
+                    self.advance()
+                    token = Tokens.ARROW
+                else:
+                    token = Tokens.MINUS
             case '*':
                 token = Tokens.STAR
             case '/':
@@ -132,6 +161,10 @@ class _Lexer:
 
         self.advance()
         return token 
+    
+    def print_tokens(self):
+        for tok in self.tokens:
+            print(tok)
 
 
 def tokenize(s: str) -> list[Tokens]:
@@ -141,4 +174,8 @@ def tokenize(s: str) -> list[Tokens]:
     except RuntimeError:
         print(lexer.error_msg, file=sys.stderr)
         sys.exit(0)
+
+    # lexer.print_tokens()
+    # print('*' * 50)
+
     return lexer.tokens

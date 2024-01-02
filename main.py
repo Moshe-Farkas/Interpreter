@@ -6,11 +6,22 @@ def repl():
     try:
         while True:
             s = input("> ")
-            print(interpret(parse(tokenize(s))))
+            interpret(parse(tokenize(s)))
 
     except KeyboardInterrupt:
         return
 
+def run_file(file_path):
+    with open(filePath) as file:
+        interpret(parse(tokenize(file.read())))
+
 
 if __name__ == '__main__':
-    repl()
+    filePath = 'test-scripts/test.txt'
+    # filePath = None
+    
+
+    if filePath != None:
+        run_file(filePath)
+    else:
+        repl()
