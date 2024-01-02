@@ -7,21 +7,43 @@ class _Parser:
         self.tokens = tokens
         self.index = 0
         self.code = []
+
+    def parse_error(self, error_msg):
+        print(error_msg, ' ||    Line:', self.peek().line)
+        raise RuntimeError()
     
     def emit_op(self, op):
         self.code.append(op)
 
     def at_end(self):
-        return self.match(TokenType.EOF)
+        return self.peek().tok_type == TokenType.EOF
     
     def check(self, tok_type):
         if self.at_end():
             return False
-        return self.tokens[self.index].tok_type == tok_type
+        return self.peek().tok_type == tok_type
+    
+    def expect_newline(self):
+        self.consume(TokenType.NEWLINE, 'Expect newline after expression.')
 
     def parse(self):
         while not self.at_end():
-            self.statement()
+            if self.match(TokenType.NEWLINE):
+                continue
+            try:
+                self.statement()
+            except RuntimeError:
+                self.synchronize()
+    
+    def synchronize(self):
+        self.advance()
+        while not self.at_end():
+            if self.previous().tok_type == TokenType.NEWLINE:
+                return
+            if self.peek().tok_type == TokenType.NEWLINE:
+                return
+            
+            self.advance()
 
     def statement(self):
         if self.match(TokenType.IF):
@@ -29,10 +51,11 @@ class _Parser:
         elif self.match(TokenType.PRINT):
             self.expression()
             self.emit_op(OpCode.PRINT)
+            if not self.at_end():
+                self.expect_newline()
 
         else:
-            print("Unexpected statement type.", file=sys.stderr)
-            sys.exit(0)
+            self.parse_error(f'Unexpected token `{self.peek().lexeme}`. Expected statement.')
     
     def if_statement(self):
         self.expression()
@@ -41,7 +64,6 @@ class _Parser:
         self.emit_op(-1)        # placeholder offset
         start_index = len(self.code)
 
-        # if self.match(TokenType.ARROW):
         self.consume(TokenType.ARROW, "Expected '->' after if.")
         self.statement()
         self.back_patch(start_index)
@@ -51,22 +73,27 @@ class _Parser:
         self.code[end_index - (end_index - start_index) - 1] = end_index - start_index
 
     def match(self, *token_types):
-        if self.index >= len(self.tokens):
-            return False
         for tok_type in token_types:
-            if self.tokens[self.index].tok_type == tok_type:
-                self.index += 1
+            if self.check(tok_type):
+                self.advance()
                 return True
         return False
     
     def consume(self, tok_type: TokenType, err_msg):
         if not self.check(tok_type):
-            print(err_msg, file=sys.stderr)
+            self.parse_error(err_msg)
         self.match(tok_type)
+
+    def advance(self):
+        if not self.at_end():
+            self.index += 1
+        return self.previous()
+    
+    def previous(self):
+        return self.tokens[self.index - 1]
         
-        # if not self.match(tok_type):
-        #     print(err_msg, file=sys.stderr)
-        #     sys.exit(0)
+    def peek(self):
+        return self.tokens[self.index]
 
     def expression(self):
         self.Or()
@@ -86,7 +113,7 @@ class _Parser:
     def equality(self):
         self.comparision()
         while self.match(TokenType.EQUAL_EQUAL, TokenType.NOT_EQUAL):
-            operator = self.tokens[self.index - 1]
+            operator = self.previous()
             self.comparision()
             op = None
             match operator.tok_type:
@@ -100,7 +127,7 @@ class _Parser:
         self.term()
         while self.match(TokenType.GREATER, TokenType.GREATER_EQUAL,
                          TokenType.LESS, TokenType.LESS_EQUAL):
-            operator = self.tokens[self.index - 1]
+            operator = self.previous()
             self.term()
             op = None
             match operator.tok_type:
@@ -118,7 +145,7 @@ class _Parser:
     def term(self):
         self.factor()
         while self.match(TokenType.PLUS, TokenType.MINUS):
-            operator = self.tokens[self.index - 1]
+            operator = self.previous()
             self.factor()
 
             op = None
@@ -133,7 +160,7 @@ class _Parser:
     def factor(self):
         self.unary()
         while self.match(TokenType.STAR, TokenType.SLASH, TokenType.PERCENT):
-            operator = self.tokens[self.index - 1]
+            operator = self.previous()
             self.unary()
             op = None
             match operator.tok_type:
@@ -148,7 +175,7 @@ class _Parser:
     
     def unary(self):
         while self.match(TokenType.MINUS):
-            operator = self.tokens[self.index - 1]
+            operator = self.previous()
             self.unary()
             op = None
             match operator.tok_type:
@@ -163,24 +190,20 @@ class _Parser:
         if self.match(TokenType.LEFT_PAREN):
             self.expression()
             self.consume(TokenType.RIGHT_PAREN, "Expect ')' after grouping.")
-        if self.index >= len(self.tokens):
-            return
         
-        if self.match(TokenType.FALSE):
+        elif self.match(TokenType.FALSE):
             self.emit_op(OpCode.FALSE)
         elif self.match(TokenType.TRUE):
             self.emit_op(OpCode.TRUE)
         elif self.match(TokenType.NUMBER):
-            token = self.tokens[self.index - 1]
+            token = self.previous()
             self.emit_op(OpCode.NUMBER)
             self.emit_op(token.value)
         elif self.match(TokenType.EOF):
             return
 
         else:
-            print(self.tokens[self.index])
-            print('Exression expected.')
-            # sys.exit(0)
+            self.parse_error(f'Expected expression after token `{self.previous().lexeme}`')
     
     def print_code(self):
         for op in self.code:

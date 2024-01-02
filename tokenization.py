@@ -23,6 +23,7 @@ class TokenType(Enum):
     FALSE           = auto()
     IF              = auto()
     IDENTIFIER      = auto()
+    NEWLINE         = auto()
     EOF             = auto()
 
     # temp 
@@ -101,7 +102,8 @@ class _Lexer:
         while not self.at_end() and self.current().isalpha():
             iden += self.current()
             self.advance()
-        
+
+        self.index -= 1     
         if iden in self.keywords:
             return self.new_token(self.keywords[iden], iden)
         else:
@@ -138,9 +140,8 @@ class _Lexer:
         
         match c:
             case '\n':
+                token = self.new_token(TokenType.NEWLINE, '\\n')
                 self.current_line += 1
-                self.advance()
-                return self.scan_token()
             case ' ' | '\t':
                 self.consume_white_space()
                 return self.scan_token()
