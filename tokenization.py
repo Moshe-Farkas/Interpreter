@@ -2,17 +2,25 @@ from enum import Enum, auto
 import sys
 
 class Tokens(Enum):
-    PLUS        = auto()
-    MINUS       = auto()
-    STAR        = auto()
-    SLASH       = auto()
-    NUMBER      = auto()
-    LEFT_PAREN  = auto()
-    RIGHT_PAREN = auto()
-    PERCENT     = auto()
-    TRUE        = auto()
-    FALSE       = auto()
-    EOF         = auto()
+    PLUS            = auto()
+    MINUS           = auto()
+    STAR            = auto()
+    SLASH           = auto()
+    OR              = auto()
+    AND             = auto()
+    EQUAL_EQUAL     = auto()
+    NOT_EQUAL       = auto()
+    GREATER_EQUAL   = auto()
+    GREATER         = auto()
+    LESS            = auto()
+    LESS_EQUAL      = auto()
+    NUMBER          = auto()
+    LEFT_PAREN      = auto()
+    RIGHT_PAREN     = auto()
+    PERCENT         = auto()
+    TRUE            = auto()
+    FALSE           = auto()
+    EOF             = auto()
 
 class _Lexer:
     def __init__(self, source: str):
@@ -31,8 +39,12 @@ class _Lexer:
         return self.index >= len(self.source)
     
     def peek_next(self):
-        # assumes not at end
-        return self.source[self.index + 1]
+        self.advance()
+        if self.at_end():
+            return '\0'
+        c = self.source[self.index]
+        self.index -= 1
+        return c
     
     def at_end(self):
         return self.index >= len(self.source)
@@ -100,11 +112,23 @@ class _Lexer:
                 token = Tokens.LEFT_PAREN
             case ')':
                 token = Tokens.RIGHT_PAREN
+            case '=':
+                if self.peek_next() == '=':
+                    self.advance()
+                    token = Tokens.EQUAL_EQUAL
+            case '>':
+                if self.peek_next() == '=':
+                    self.advance()
+                    token = Tokens.GREATER_EQUAL
+                else:
+                    token = Tokens.GREATER
 
-            case _:
-                self.error_msg = f"Unexpected char '{c}'"
-                raise RuntimeError
-
+            case '<':
+                if self.peek_next() == '=':
+                    self.advance()
+                    token = Tokens.LESS_EQUAL
+                else:
+                    token = Tokens.LESS
 
         self.advance()
         return token 
