@@ -11,6 +11,9 @@ def interpret(code: list):
             case OpCode.NUMBER: 
                 i += 1
                 stack.append(code[i])
+            case OpCode.STRING: 
+                i += 1
+                stack.append(code[i])
             case OpCode.TRUE:
                 stack.append(True)
             case OpCode.FALSE:
@@ -70,7 +73,7 @@ def interpret(code: list):
         i += 1 
 
 def comparision(a, b, op):
-    if not (isinstance(a, str) and isinstance(b, str)):
+    if not (isinstance(a, float) and isinstance(b, float)):
         raise RuntimeError(f"Can't compare instance of type `{type(a).__name__}` to type `{type(b).__name__}`.")
     match op:
         case '>': 

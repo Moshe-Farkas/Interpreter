@@ -16,6 +16,7 @@ class TokenType(Enum):
     LESS            = auto()
     LESS_EQUAL      = auto()
     NUMBER          = auto()
+    STRING          = auto()
     LEFT_PAREN      = auto()
     RIGHT_PAREN     = auto()
     LEFT_BRACE      = auto()
@@ -110,8 +111,7 @@ class _Lexer:
         if iden in self.keywords:
             return self.new_token(self.keywords[iden], iden)
         else:
-            print('should not be here')
-            return TokenType.IDENTIFIER
+            return self.new_token(TokenType.IDENTIFIER, iden)
     
     def tokenize(self):
         token = self.scan_token()
@@ -126,7 +126,12 @@ class _Lexer:
         while not self.at_end() and self.current() != '"':
             literal += self.current()
             self.advance()
-        return literal
+
+        if self.at_end():
+            print('Unterminated string.')
+            sys.exit(0)
+
+        return self.new_token(TokenType.STRING, literal)
     
     def new_token(self, tok_type, lexeme, value=None):
         return Token(tok_type, lexeme, self.current_line, value)

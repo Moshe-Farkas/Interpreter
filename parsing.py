@@ -224,6 +224,10 @@ class _Parser:
             token = self.previous()
             self.emit_op(OpCode.NUMBER)
             self.emit_op(token.value)
+        elif self.match(TokenType.STRING):
+            token = self.previous()
+            self.emit_op(OpCode.STRING)
+            self.emit_op(token.lexeme)
         elif self.match(TokenType.EOF):
             return
 
