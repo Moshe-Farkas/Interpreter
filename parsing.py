@@ -40,10 +40,10 @@ class _Parser:
     def synchronize(self):
         self.advance()
         while not self.at_end():
-            if self.previous().tok_type == TokenType.NEWLINE:
-                return
-            if self.peek().tok_type == TokenType.NEWLINE:
-                return
+            # if self.previous().tok_type == TokenType.NEWLINE:
+            #     return
+            # if self.peek().tok_type == TokenType.NEWLINE:
+            #     return
 
             self.advance()
 
@@ -55,7 +55,8 @@ class _Parser:
         elif self.match(TokenType.PRINT):
             self.expression()
             self.emit_op(OpCode.PRINT)
-            self.consume(TokenType.NEWLINE, "Expect '\\n' after expression.")
+            if not self.at_end():
+                self.consume(TokenType.NEWLINE, "Expect '\\n' after expression.")
 
         else:
             self.parse_error(f'Unexpected token `{self.peek().lexeme}`. Expected statement.')
@@ -91,12 +92,10 @@ class _Parser:
         self.code[end_index - (end_index - start_index) - 1] = end_index - start_index
 
     def block(self):
-        # after consumed left brace
         while not self.at_end() and not self.check(TokenType.RIGHT_BRACE):
             self.statement()
         
         self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close block.")
-
 
     def match(self, *token_types):
         for tok_type in token_types:
@@ -229,7 +228,7 @@ class _Parser:
             return
 
         else:
-            self.parse_error(f'Expected expression after token `{self.previous().lexeme}`')
+            self.parse_error(f'Unexpected token `{self.peek().lexeme}`')
     
     def print_code(self):
         for op in self.code:

@@ -166,6 +166,8 @@ class _Lexer:
                 token = self.new_token(TokenType.LEFT_BRACE, '{')
             case '}':
                 token = self.new_token(TokenType.RIGHT_BRACE, '}')
+            case '%':
+                token = self.new_token(TokenType.PERCENT, '%')
             case '=':
                 if self.peek_next() == '=':
                     self.advance()
