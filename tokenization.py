@@ -18,6 +18,8 @@ class TokenType(Enum):
     NUMBER          = auto()
     LEFT_PAREN      = auto()
     RIGHT_PAREN     = auto()
+    LEFT_BRACE      = auto()
+    RIGHT_BRACE     = auto()
     PERCENT         = auto()
     TRUE            = auto()
     FALSE           = auto()
@@ -27,7 +29,6 @@ class TokenType(Enum):
     EOF             = auto()
 
     # temp 
-    ARROW           = auto()
     PRINT           = auto()
 
 
@@ -150,11 +151,7 @@ class _Lexer:
             case '+':
                 token = self.new_token(TokenType.PLUS, '+')
             case '-':
-                if self.peek_next() == '>':
-                    self.advance()
-                    token = self.new_token(TokenType.ARROW, '->')
-                else:
-                    token = self.new_token(TokenType.MINUS, '-')
+                token = self.new_token(TokenType.MINUS, '-')
             case '*':
                 token = self.new_token(TokenType.STAR, '*')
             case '/':
@@ -163,6 +160,10 @@ class _Lexer:
                 token = self.new_token(TokenType.LEFT_PAREN, '(')
             case ')':
                 token = self.new_token(TokenType.RIGHT_PAREN, ')')
+            case '{':
+                token = self.new_token(TokenType.LEFT_BRACE, '{')
+            case '}':
+                token = self.new_token(TokenType.RIGHT_BRACE, '}')
             case '=':
                 if self.peek_next() == '=':
                     self.advance()

@@ -46,13 +46,13 @@ class _Parser:
             self.advance()
 
     def statement(self):
+        if (self.match(TokenType.NEWLINE)):
+            return
         if self.match(TokenType.IF):
             self.if_statement()
         elif self.match(TokenType.PRINT):
             self.expression()
             self.emit_op(OpCode.PRINT)
-            if not self.at_end():
-                self.expect_newline()
 
         else:
             self.parse_error(f'Unexpected token `{self.peek().lexeme}`. Expected statement.')
@@ -64,13 +64,23 @@ class _Parser:
         self.emit_op(-1)        # placeholder offset
         start_index = len(self.code)
 
-        self.consume(TokenType.ARROW, "Expected '->' after if.")
-        self.statement()
+        self.consume(TokenType.LEFT_BRACE, "Expect '{' after if.")
+        self.block()
+
+
         self.back_patch(start_index)
             
     def back_patch(self, start_index):
         end_index = len(self.code)
         self.code[end_index - (end_index - start_index) - 1] = end_index - start_index
+
+    def block(self):
+        # after consumed left brace
+        while not self.at_end() and not self.check(TokenType.RIGHT_BRACE):
+            self.statement()
+        
+        self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close block.")
+
 
     def match(self, *token_types):
         for tok_type in token_types:
