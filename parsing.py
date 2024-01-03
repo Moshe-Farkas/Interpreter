@@ -7,9 +7,11 @@ class _Parser:
         self.tokens = tokens
         self.index = 0
         self.code = []
+        self.had_err = False
 
     def parse_error(self, error_msg):
-        print(error_msg, ' ||    Line:', self.peek().line)
+        self.had_err = True
+        print(error_msg, ' ------ Line:', self.peek().line)
         raise RuntimeError()
     
     def emit_op(self, op):
@@ -42,7 +44,7 @@ class _Parser:
                 return
             if self.peek().tok_type == TokenType.NEWLINE:
                 return
-            
+
             self.advance()
 
     def statement(self):
@@ -53,11 +55,13 @@ class _Parser:
         elif self.match(TokenType.PRINT):
             self.expression()
             self.emit_op(OpCode.PRINT)
+            self.consume(TokenType.NEWLINE, "Expect '\\n' after expression.")
 
         else:
             self.parse_error(f'Unexpected token `{self.peek().lexeme}`. Expected statement.')
     
     def if_statement(self):
+        # compile condition
         self.expression()
         
         self.emit_op(OpCode.JUMP_FALSE)
@@ -67,8 +71,20 @@ class _Parser:
         self.consume(TokenType.LEFT_BRACE, "Expect '{' after if.")
         self.block()
 
+        self.emit_op(OpCode.JUMP)
+        self.emit_op(-1)
+        after_if = len(self.code)
 
-        self.back_patch(start_index)
+        if self.match(TokenType.ELSE):
+            self.back_patch(start_index)
+            if self.match(TokenType.LEFT_BRACE):
+                self.block()
+            else:
+                self.consume(TokenType.IF, "Expect '{' or if.")
+                self.if_statement()
+        else:
+            self.back_patch(start_index)
+        self.back_patch(after_if)
             
     def back_patch(self, start_index):
         end_index = len(self.code)
@@ -227,5 +243,8 @@ def parse(tokens: list):
     # parser.print_code()
     # print('*' * 50)
     # print('\n')
+
+    if parser.had_err:
+        sys.exit(0)
 
     return parser.code

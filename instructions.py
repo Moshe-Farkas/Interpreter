@@ -17,4 +17,5 @@ class OpCode(Enum):
     LESS_EQUAL    = auto()
     IDENTIFIER    = auto()
     JUMP_FALSE    = auto()
+    JUMP          = auto()
     PRINT         = auto()

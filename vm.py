@@ -59,6 +59,8 @@ def interpret(code: list):
                     i += 1
                 else:
                     i += code[i + 1] + 1
+            case OpCode.JUMP:
+                i += code[i + 1] + 1
 
             case OpCode.PRINT:
                 print(stack.pop())

@@ -24,6 +24,7 @@ class TokenType(Enum):
     TRUE            = auto()
     FALSE           = auto()
     IF              = auto()
+    ELSE            = auto()
     IDENTIFIER      = auto()
     NEWLINE         = auto()
     EOF             = auto()
@@ -53,6 +54,7 @@ class _Lexer:
     keywords = {
         "print": TokenType.PRINT,
         "if":    TokenType.IF,
+        "else":  TokenType.ELSE,
         "false": TokenType.FALSE,
         "true":  TokenType.TRUE,
     }
