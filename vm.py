@@ -78,6 +78,8 @@ def interpret(code: list):
                     i += code[i + 1] + 1
             case OpCode.JUMP:
                 i += code[i + 1] + 1
+            case OpCode.LOOP:
+                i -= code[i + 1]
             case OpCode.ASSIGNMENT:
                 iden = stack.pop()
                 value = stack.pop()

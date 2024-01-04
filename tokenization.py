@@ -27,6 +27,7 @@ class TokenType(Enum):
     FALSE           = auto()
     IF              = auto()
     ELSE            = auto()
+    WHILE           = auto()
     IDENTIFIER      = auto()
     NEWLINE         = auto()
     EOF             = auto()
@@ -59,7 +60,8 @@ class _Lexer:
         "else":  TokenType.ELSE,
         "false": TokenType.FALSE,
         "true":  TokenType.TRUE,
-        "not":  TokenType.NOT,
+        "not":   TokenType.NOT,
+        "while": TokenType.WHILE,
     }
 
     def __init__(self, source: str):

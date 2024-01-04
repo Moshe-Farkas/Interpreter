@@ -53,11 +53,9 @@ class _Parser:
         if self.match(TokenType.IF):
             self.if_statement()
         elif self.match(TokenType.PRINT):
-            self.expression()
-            self.emit_op(OpCode.PRINT)
-            if not self.at_end():
-                self.consume(TokenType.NEWLINE, "Expect '\\n' after expression.")
-
+            self.print_statement()
+        elif self.match(TokenType.WHILE):
+            self.while_statement()
         elif self.match(TokenType.IDENTIFIER):
             self.assignment()
 
@@ -101,15 +99,38 @@ class _Parser:
         
         self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close block.")
     
+    def print_statement(self):
+        self.expression()
+        self.emit_op(OpCode.PRINT)
+        if not self.at_end():
+            self.consume(TokenType.NEWLINE, "Expect '\\n' after expression.")
+
     def assignment(self):
         identifier = self.previous()
-        self.consume(TokenType.EQUAL, "Expect `=` after identifier.")
-
+        self.consume(TokenType.EQUAL, f"Expect `=` after identifier `{identifier.lexeme}`.")
         self.expression()
         self.emit_op(OpCode.IDENTIFIER)            
         self.emit_op(identifier.lexeme)
         self.emit_op(OpCode.ASSIGNMENT)
 
+    def while_statement(self):
+        condition_index = len(self.code)    
+        self.expression()
+        self.consume(TokenType.LEFT_BRACE, "Expect `{` after while keyword.")
+
+        self.emit_op(OpCode.JUMP_FALSE)
+        self.emit_op(-1)    # placeholder
+        jump_false_index = len(self.code)
+
+        self.block()
+        self.emit_op(OpCode.LOOP)
+
+        self.emit_op(len(self.code) - condition_index)        
+
+
+
+        self.back_patch(jump_false_index)
+    
     def match(self, *token_types):
         for tok_type in token_types:
             if self.check(tok_type):
@@ -219,7 +240,6 @@ class _Parser:
             match operator.tok_type:
                 case TokenType.MINUS:
                     op = OpCode.NEGATION
-
                 case TokenType.NOT:
                     op = OpCode.NOT
 

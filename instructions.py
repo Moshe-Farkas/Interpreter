@@ -20,6 +20,7 @@ class OpCode(Enum):
     IDENTIFIER    = auto()
     JUMP_FALSE    = auto()
     JUMP          = auto()
+    LOOP          = auto()
     PRINT         = auto()
     ASSIGNMENT    = auto()
     RESOLVE       = auto()
