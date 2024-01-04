@@ -58,6 +58,10 @@ class _Parser:
             if not self.at_end():
                 self.consume(TokenType.NEWLINE, "Expect '\\n' after expression.")
 
+        elif self.match(TokenType.IDENTIFIER):
+            self.assignment()
+
+
         else:
             self.parse_error(f'Unexpected token `{self.peek().lexeme}`. Expected statement.')
     
@@ -96,6 +100,15 @@ class _Parser:
             self.statement()
         
         self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close block.")
+    
+    def assignment(self):
+        identifier = self.previous()
+        self.consume(TokenType.EQUAL, "Expect `=` after identifier.")
+
+        self.expression()
+        self.emit_op(OpCode.IDENTIFIER)            
+        self.emit_op(identifier.lexeme)
+        self.emit_op(OpCode.ASSIGNMENT)
 
     def match(self, *token_types):
         for tok_type in token_types:
@@ -199,13 +212,16 @@ class _Parser:
             self.emit_op(op)
     
     def unary(self):
-        while self.match(TokenType.MINUS):
+        while self.match(TokenType.MINUS, TokenType.NOT):
             operator = self.previous()
             self.unary()
             op = None
             match operator.tok_type:
                 case TokenType.MINUS:
                     op = OpCode.NEGATION
+
+                case TokenType.NOT:
+                    op = OpCode.NOT
 
             self.emit_op(op)
             return
@@ -230,6 +246,13 @@ class _Parser:
             self.emit_op(token.lexeme)
         elif self.match(TokenType.EOF):
             return
+        
+
+        elif self.match(TokenType.IDENTIFIER):
+            iden = self.previous()
+            self.emit_op(OpCode.IDENTIFIER)
+            self.emit_op(iden.lexeme)
+            self.emit_op(OpCode.RESOLVE)
 
         else:
             self.parse_error(f'Unexpected token `{self.peek().lexeme}`')
@@ -243,6 +266,7 @@ def parse(tokens: list):
     parser = _Parser(tokens)
     parser.parse()
 
+    # print('*' * 50)
     # parser.print_code()
     # print('*' * 50)
     # print('\n')

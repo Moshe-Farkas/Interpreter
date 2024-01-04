@@ -11,6 +11,7 @@ class OpCode(Enum):
     FALSE         = auto()
     MODULO        = auto()
     NEGATION      = auto()
+    NOT           = auto()
     EQUAL_EQUAL   = auto()
     GREATER       = auto()
     GREATER_EQUAL = auto()
@@ -20,3 +21,5 @@ class OpCode(Enum):
     JUMP_FALSE    = auto()
     JUMP          = auto()
     PRINT         = auto()
+    ASSIGNMENT    = auto()
+    RESOLVE       = auto()

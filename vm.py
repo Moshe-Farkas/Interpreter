@@ -4,7 +4,9 @@ import sys
 
 def interpret(code: list):
     stack = []
+    variables = {}
     i = 0
+
     while i < len(code):
         op = code[i]
         match op:
@@ -12,6 +14,9 @@ def interpret(code: list):
                 i += 1
                 stack.append(code[i])
             case OpCode.STRING: 
+                i += 1
+                stack.append(code[i])
+            case OpCode.IDENTIFIER: 
                 i += 1
                 stack.append(code[i])
             case OpCode.TRUE:
@@ -43,6 +48,13 @@ def interpret(code: list):
                 stack.append(negate(a))
             case OpCode.EQUAL_EQUAL:
                 stack.append(stack.pop() == stack.pop())
+            case OpCode.NOT:
+                operand = stack.pop()
+                if not isinstance(operand, bool):
+                    raise RuntimeError(f"Can't logic negate instance of type `{type(operand).__name__}`.")
+                else:
+                    stack.append(not operand)
+
             case OpCode.GREATER:
                 b = stack.pop()
                 a = stack.pop()
@@ -66,6 +78,17 @@ def interpret(code: list):
                     i += code[i + 1] + 1
             case OpCode.JUMP:
                 i += code[i + 1] + 1
+            case OpCode.ASSIGNMENT:
+                iden = stack.pop()
+                value = stack.pop()
+                variables[iden] = value
+
+            case OpCode.RESOLVE:
+                iden = stack.pop()
+                if iden not in variables:
+                    raise RuntimeError(f"Undefined variable `{iden}`.")
+                else:
+                    stack.append(variables[iden])
 
             case OpCode.PRINT:
                 print(stack.pop())

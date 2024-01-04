@@ -8,6 +8,7 @@ class TokenType(Enum):
     SLASH           = auto()
     OR              = auto()
     AND             = auto()
+    NOT             = auto()
     EQUAL_EQUAL     = auto()
     EQUAL           = auto()
     NOT_EQUAL       = auto()
@@ -58,6 +59,7 @@ class _Lexer:
         "else":  TokenType.ELSE,
         "false": TokenType.FALSE,
         "true":  TokenType.TRUE,
+        "not":  TokenType.NOT,
     }
 
     def __init__(self, source: str):
