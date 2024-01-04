@@ -72,7 +72,10 @@ def interpret(code: list):
                 a = stack.pop()
                 stack.append(comparision(a, b, '<='))
             case OpCode.JUMP_FALSE:
-                if stack.pop() == True:
+                condition = stack.pop()
+                if not isinstance(condition, bool):
+                    raise RuntimeError(f"Condition can't be of type `{type(condition).__name__}`.")
+                if condition == True:
                     i += 1
                 else:
                     i += code[i + 1] + 1

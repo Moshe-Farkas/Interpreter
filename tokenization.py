@@ -106,8 +106,10 @@ class _Lexer:
         return self.new_token(TokenType.NUMBER, num, float(num))
 
     def keyword_or_identifier(self):
+        def valid_var_letter():
+            return self.current().isalpha() or self.current() == '_'
         iden = ''
-        while not self.at_end() and self.current().isalpha():
+        while not self.at_end() and valid_var_letter():
             iden += self.current()
             self.advance()
 
