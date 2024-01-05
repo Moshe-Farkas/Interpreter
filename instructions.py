@@ -23,4 +23,5 @@ class OpCode(Enum):
     LOOP          = auto()
     PRINT         = auto()
     ASSIGNMENT    = auto()
+    LIST          = auto()
     RESOLVE       = auto()

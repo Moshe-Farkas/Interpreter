@@ -94,6 +94,13 @@ def interpret(code: list):
                     raise RuntimeError(f"Undefined variable `{iden}`.")
                 else:
                     stack.append(variables[iden])
+            
+            case OpCode.LIST:
+                i += 1
+                list_items_count = code[i]
+                list_object = [stack.pop() for i in range(list_items_count)]
+                list_object.reverse()
+                stack.append(list_object)
 
             case OpCode.PRINT:
                 print(stack.pop())

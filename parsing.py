@@ -26,7 +26,7 @@ class _Parser:
         return self.peek().tok_type == tok_type
     
     def expect_newline(self):
-        self.consume(TokenType.NEWLINE, 'Expect newline after expression.')
+        self.consume(TokenType.NEWLINE, 'Expect newline after statement.')
 
     def parse(self):
         while not self.at_end():
@@ -62,6 +62,10 @@ class _Parser:
 
         else:
             self.parse_error(f'Unexpected token `{self.peek().lexeme}`. Expected statement.')
+
+
+        if not self.at_end():
+            self.expect_newline()
     
     def if_statement(self):
         # compile condition
@@ -102,16 +106,49 @@ class _Parser:
     def print_statement(self):
         self.expression()
         self.emit_op(OpCode.PRINT)
-        if not self.at_end():
-            self.consume(TokenType.NEWLINE, "Expect '\\n' after expression.")
 
     def assignment(self):
         identifier = self.previous()
+
         self.consume(TokenType.EQUAL, f"Expect `=` after identifier `{identifier.lexeme}`.")
-        self.expression()
+
+        if self.match(TokenType.LEFT_BRACKET):
+            # parse list
+            self.list()    
+        else:
+            self.expression()
+
         self.emit_op(OpCode.IDENTIFIER)            
         self.emit_op(identifier.lexeme)
         self.emit_op(OpCode.ASSIGNMENT)
+
+
+        # identifier = self.previous()
+        # self.consume(TokenType.EQUAL, f"Expect `=` after identifier `{identifier.lexeme}`.")
+        # self.expression()
+        # self.emit_op(OpCode.IDENTIFIER)            
+        # self.emit_op(identifier.lexeme)
+        # self.emit_op(OpCode.ASSIGNMENT)
+    
+    def list(self):
+        list_items_count = 0
+        while not self.at_end():
+            self.expression()
+            list_items_count += 1
+            if self.match(TokenType.RIGHT_BRACKET):
+                break
+            if self.match(TokenType.NEWLINE):
+                self.parse_error("Expect `]` to close list initializer.")
+            self.consume(TokenType.COMMA, "Expected `,` to seperate values.")
+
+        if self.at_end():
+            if self.previous().tok_type != TokenType.RIGHT_BRACKET:
+                self.parse_error("Expect `]` after list creation.")
+            
+    
+        self.emit_op(OpCode.LIST)
+        self.emit_op(list_items_count)
+
 
     def while_statement(self):
         condition_index = len(self.code)    
@@ -264,15 +301,15 @@ class _Parser:
             token = self.previous()
             self.emit_op(OpCode.STRING)
             self.emit_op(token.lexeme)
-        elif self.match(TokenType.EOF):
-            return
-        
-
         elif self.match(TokenType.IDENTIFIER):
+            # check if match left bracket
             iden = self.previous()
             self.emit_op(OpCode.IDENTIFIER)
             self.emit_op(iden.lexeme)
             self.emit_op(OpCode.RESOLVE)
+
+        elif self.match(TokenType.EOF):
+            return
 
         else:
             self.parse_error(f'Unexpected token `{self.peek().lexeme}`')
@@ -286,10 +323,10 @@ def parse(tokens: list):
     parser = _Parser(tokens)
     parser.parse()
 
-    # print('*' * 50)
-    # parser.print_code()
-    # print('*' * 50)
-    # print('\n')
+    print('*' * 50)
+    parser.print_code()
+    print('*' * 50)
+    print('\n')
 
     if parser.had_err:
         sys.exit(0)

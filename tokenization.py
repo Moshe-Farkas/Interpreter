@@ -22,6 +22,9 @@ class TokenType(Enum):
     RIGHT_PAREN     = auto()
     LEFT_BRACE      = auto()
     RIGHT_BRACE     = auto()
+    LEFT_BRACKET    = auto()
+    RIGHT_BRACKET   = auto()
+    COMMA           = auto()
     PERCENT         = auto()
     TRUE            = auto()
     FALSE           = auto()
@@ -159,6 +162,8 @@ class _Lexer:
             case ' ' | '\t':
                 self.consume_white_space()
                 return self.scan_token()
+            case ',':
+                token = self.new_token(TokenType.COMMA, ',')
             case '"':
                 token = self.string_literal()
             case '+':
@@ -179,6 +184,10 @@ class _Lexer:
                 token = self.new_token(TokenType.RIGHT_BRACE, '}')
             case '%':
                 token = self.new_token(TokenType.PERCENT, '%')
+            case '[':
+                token = self.new_token(TokenType.LEFT_BRACKET, '[')
+            case ']':
+                token = self.new_token(TokenType.RIGHT_BRACKET, ']')
             case '=':
                 if self.peek_next() == '=':
                     self.advance()
