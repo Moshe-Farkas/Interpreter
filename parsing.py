@@ -302,17 +302,32 @@ class _Parser:
             self.emit_op(OpCode.STRING)
             self.emit_op(token.lexeme)
         elif self.match(TokenType.IDENTIFIER):
-            # check if match left bracket
-            iden = self.previous()
-            self.emit_op(OpCode.IDENTIFIER)
-            self.emit_op(iden.lexeme)
-            self.emit_op(OpCode.RESOLVE)
+            self.resolve_var()
 
         elif self.match(TokenType.EOF):
             return
 
         else:
             self.parse_error(f'Unexpected token `{self.peek().lexeme}`')
+        
+    def resolve_var(self):
+        iden = self.previous()
+        subscriptFlag = False
+        if self.match(TokenType.LEFT_BRACKET):
+            self.subscript()
+            subscriptFlag = True
+
+        self.emit_op(OpCode.IDENTIFIER)
+        self.emit_op(iden.lexeme)
+
+
+        self.emit_op(OpCode.RESOLVE)
+        if subscriptFlag:
+            self.emit_op(OpCode.SUBSCRIPT)
+    
+    def subscript(self):
+        self.expression()
+        self.consume(TokenType.RIGHT_BRACKET, "Expect `]` after subscript.")
     
     def print_code(self):
         for op in self.code:
@@ -323,10 +338,10 @@ def parse(tokens: list):
     parser = _Parser(tokens)
     parser.parse()
 
-    print('*' * 50)
-    parser.print_code()
-    print('*' * 50)
-    print('\n')
+    # print('*' * 50)
+    # parser.print_code()
+    # print('*' * 50)
+    # print('\n')
 
     if parser.had_err:
         sys.exit(0)

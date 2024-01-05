@@ -7,6 +7,11 @@ def interpret(code: list):
     variables = {}
     i = 0
 
+    def peek_code(distance):
+        if i + distance >= len(code):
+            return None
+        return code[i + distance]
+
     while i < len(code):
         op = code[i]
         match op:
@@ -93,8 +98,20 @@ def interpret(code: list):
                 if iden not in variables:
                     raise RuntimeError(f"Undefined variable `{iden}`.")
                 else:
-                    stack.append(variables[iden])
-            
+                    if peek_code(1) == OpCode.SUBSCRIPT:
+                        index = stack.pop()
+                        if not isinstance(index, float):
+                            raise RuntimeError(f"Can't use exression of type `{type(index).__name__}` \
+to subscript `{iden}`.")
+
+                        index = int(index) 
+                        if index >= len(variables[iden]) or index < 0:
+                            raise RuntimeError(f"Index `{index}` out of bounds \
+for list of length `{len(variables[iden])}`.")
+                        stack.append(variables[iden][index])
+                    else:
+                        stack.append(variables[iden])
+                
             case OpCode.LIST:
                 i += 1
                 list_items_count = code[i]
@@ -106,6 +123,7 @@ def interpret(code: list):
                 print(stack.pop())
 
         i += 1 
+    
 
 def comparision(a, b, op):
     if not (isinstance(a, float) and isinstance(b, float)):
