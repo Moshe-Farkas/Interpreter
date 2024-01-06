@@ -101,13 +101,12 @@ def interpret(code: list):
                     if peek_code(1) == OpCode.SUBSCRIPT:
                         index = stack.pop()
                         if not isinstance(index, float):
-                            raise RuntimeError(f"Can't use exression of type `{type(index).__name__}` \
-to subscript `{iden}`.")
-
+                            raise RuntimeError(f"Can't use exression of type `{type(index).__name__}` " +
+                                                "to subscript `{iden}`.")
                         index = int(index) 
                         if index >= len(variables[iden]) or index < 0:
-                            raise RuntimeError(f"Index `{index}` out of bounds \
-for list of length `{len(variables[iden])}`.")
+                            raise RuntimeError(f"Index `{index}` out of bounds " + 
+                                                "for list of length `{len(variables[iden])}`.")
                         stack.append(variables[iden][index])
                     else:
                         stack.append(variables[iden])

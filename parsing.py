@@ -132,23 +132,28 @@ class _Parser:
     
     def list(self):
         list_items_count = 0
-        while not self.at_end():
-            self.expression()
-            list_items_count += 1
-            if self.match(TokenType.RIGHT_BRACKET):
-                break
+        def parse_list():
+            nonlocal list_items_count
             if self.match(TokenType.NEWLINE):
-                self.parse_error("Expect `]` to close list initializer.")
-            self.consume(TokenType.COMMA, "Expected `,` to seperate values.")
-
-        if self.at_end():
-            if self.previous().tok_type != TokenType.RIGHT_BRACKET:
-                self.parse_error("Expect `]` after list creation.")
-            
-    
+                parse_list()
+            elif self.match(TokenType.COMMA):
+                parse_list()
+            elif self.match(TokenType.RIGHT_BRACKET):
+                return
+            else:
+                self.list_item()
+                list_items_count += 1
+                parse_list()
+        
+        parse_list()
         self.emit_op(OpCode.LIST)
         self.emit_op(list_items_count)
 
+    def list_item(self):
+        if self.match(TokenType.LEFT_BRACKET):
+            self.list()
+        else:
+            self.expression()
 
     def while_statement(self):
         condition_index = len(self.code)    
@@ -163,9 +168,6 @@ class _Parser:
         self.emit_op(OpCode.LOOP)
 
         self.emit_op(len(self.code) - condition_index)        
-
-
-
         self.back_patch(jump_false_index)
     
     def match(self, *token_types):
