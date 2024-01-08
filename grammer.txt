@@ -1,0 +1,104 @@
+PROGRAM    := FUNC_DECLARATION EOF*
+
+FUNC_DECLARATION := 'func' IDENTIFIER (IDENTIFIER* ',') BLOCK
+
+--------------------------------------------------------------------------------------
+
+STATEMENT   := PRINT 
+            | IF
+            | WHILE
+            | CALL
+
+PRINT       := 'print' EXPR
+
+IF          := 'if' EXPR BLOCK 
+            | 'if' EXPR BLOCK ELSE
+
+ELSE        := 'else' IF 
+            | 'else' BLOCK
+
+WHILE       := 'while' EXPR BLOCK
+
+ASSIGNMENT := IDENTIFIER '=' EXPR 
+            | IDENTIFIER '=' LIST
+            | IDENTIFIER SUBSCRIPT = EXPR
+
+RETURN     := 'return' 
+            | 'return' EXPR
+
+CALL       := IDENTIFIER '( (EXPR)* ',' )'
+
+--------------------------------------------------------------------------------------
+
+LIST       := '[' LIST_ITEM ']'
+            | '[' LIST_ITEM  (',' LIST_ITEM)* ']'
+
+LIST_ITEM  := EXPR 
+            | LIST
+
+BLOCK       := '{' STATEMENT* '}'
+
+--------------------------------------------------------------------------------------
+
+EXPR       := ASSIGNMENT
+
+OR         := AND 'or' OR 
+            | AND
+
+AND        := EQUALITY 'and' AND 
+            | EQUALITY
+
+EQUALITY   := COMPARISION '==' EQUALITY 
+            | COMPARISION '!=' EQUALITY 
+            | COMPARISION
+
+COMPARISION := TERM '>' COMPARISION 
+            | TERM '<' COMPARISION 
+            | TERM '>=' COMPARISION 
+            | TERM '<=' COMPARISION
+            | TERM
+
+TERM        := FACTOR '+' TERM
+            | FACTOR '-' TERM
+            | FACTOR
+            
+FACTOR      := UNARY '*' FACTOR 
+            | UNARY '/' FACTOR
+            | UNARY '%' FACTOR
+            | UNARY
+
+UNARY       := '-' UNARY 
+            | '!' UNARY
+            | PRIMARY
+
+PRIMARY     := NUMBER 
+            | STRING
+            | IDENTIFIER
+            | CALL
+            | IDENTIFIER SUBSCRIPT
+            | FALSE
+            | TRUE
+            | GROUPING
+
+SUBSCRIPT   := '[ EXPR ']'
+
+GROUPING    := '(' EXPR ')'
+
+--------------------------------------------------------------------------------------
+
+iden
+lexeme
+resolve
+subscript
+index
+
+    resolve: 
+        if peek(stack) is subscript:
+            index = pop()
+
+
+stack
+[]
+[list]
+[23]
+

@@ -2,11 +2,17 @@ from instructions import OpCode
 from tokenization import TokenType
 import sys
 
+class FunctionDeclaration:
+    def __init__(self, params, code_segment):
+        self.params = params
+        self.code_segment = code_segment
+
+
 class _Parser:
     def __init__(self, tokens: list):
         self.tokens = tokens
         self.index = 0
-        self.func_segments = {}    # function name: function_segment
+        self.function_declarations = {}
         self.current_function: list
         self.had_err = False
 
@@ -49,21 +55,35 @@ class _Parser:
     def function_declaration(self):
         self.consume(TokenType.FUNC, "Expect all toplevel code to be function declarations.")
         if not self.match(TokenType.IDENTIFIER):
-            self.parse_error()
+            self.parse_error("Expect function name after `func` keyword.")
 
         iden = self.previous().lexeme
         self.current_function = []
+        params = []
+        if not self.check(TokenType.LEFT_BRACE):
+            params = self.parameters()
 
         self.consume(TokenType.LEFT_BRACE, "Expect `{` after after function name.")
         self.block()
 
-        # # temp change
-        # # --------------------- 
-        # self.emit_op(OpCode.NULL)
-        # self.emit_op(OpCode.RET)
-        # # ----------------------
+        self.function_declarations[iden] = FunctionDeclaration(params, self.current_function)
+    
+    def parameters(self):
+        params = []
+        while True:
+            if not self.match(TokenType.IDENTIFIER):
+                self.parse_error("Expect identifers.")
 
-        self.func_segments[iden] = self.current_function
+            params.append(self.previous().lexeme)
+            if self.check(TokenType.COMMA):
+                self.consume(TokenType.COMMA, "")
+
+            elif self.check(TokenType.LEFT_BRACE):
+                break
+            else:
+                self.parse_error("Expect `,` to seperate paramerters or `{` to start function body.")
+
+        return params
 
     def statement(self):
         if (self.match(TokenType.NEWLINE)):
@@ -216,6 +236,17 @@ class _Parser:
         return self.tokens[self.index]
     
     def call(self, iden: str):
+        list_items_count = 0 
+        while not self.check(TokenType.RIGHT_PAREN):
+            self.expression()
+            list_items_count += 1
+            if self.check(TokenType.RIGHT_PAREN):
+                break
+            self.consume(TokenType.COMMA, "Expect `,` to seperate arguments.")
+
+        self.emit_op(OpCode.LIST) 
+        self.emit_op(list_items_count)
+
         self.consume(TokenType.RIGHT_PAREN, "Expect `)` after function call.")
         self.emit_op(OpCode.IDENTIFIER)
         self.emit_op(iden)
@@ -365,9 +396,10 @@ class _Parser:
         self.consume(TokenType.RIGHT_BRACKET, "Expect `]` after subscript.")
     
     def print_code(self):
-        for func_name in self.func_segments:
+        for func_name in self.function_declarations:
             print(func_name + ":")
-            for op in self.func_segments[func_name]:
+            print("params:", self.function_declarations[func_name].params)
+            for op in self.function_declarations[func_name].code_segment:
                 print('\t', op)
             print('-' * 60)
 
@@ -386,4 +418,4 @@ def parse(tokens: list):
     if parser.had_err:
         sys.exit(0)
 
-    return parser.func_segments
+    return parser.function_declarations
