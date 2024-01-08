@@ -9,6 +9,7 @@ class OpCode(Enum):
     STRING        = auto()
     TRUE          = auto()
     FALSE         = auto()
+    NULL          = auto()
     MODULO        = auto()
     NEGATION      = auto()
     NOT           = auto()
@@ -26,3 +27,5 @@ class OpCode(Enum):
     LIST          = auto()
     SUBSCRIPT     = auto()
     RESOLVE       = auto()
+    RET           = auto()
+    CALL          = auto()

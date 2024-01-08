@@ -28,11 +28,14 @@ class TokenType(Enum):
     PERCENT         = auto()
     TRUE            = auto()
     FALSE           = auto()
+    NULL            = auto()
     IF              = auto()
     ELSE            = auto()
     WHILE           = auto()
     IDENTIFIER      = auto()
     NEWLINE         = auto()
+    FUNC            = auto()
+    RETURN          = auto()
     EOF             = auto()
 
     # temp 
@@ -58,13 +61,16 @@ class Token:
 
 class _Lexer:
     keywords = {
-        "print": TokenType.PRINT,
-        "if":    TokenType.IF,
-        "else":  TokenType.ELSE,
-        "false": TokenType.FALSE,
-        "true":  TokenType.TRUE,
-        "not":   TokenType.NOT,
-        "while": TokenType.WHILE,
+        "print":  TokenType.PRINT,
+        "if":     TokenType.IF,
+        "else":   TokenType.ELSE,
+        "false":  TokenType.FALSE,
+        "true":   TokenType.TRUE,
+        "not":    TokenType.NOT,
+        "while":  TokenType.WHILE,
+        "func":   TokenType.FUNC,
+        "null":   TokenType.NULL,
+        "return": TokenType.RETURN
     }
 
     def __init__(self, source: str):

@@ -6,7 +6,8 @@ class _Parser:
     def __init__(self, tokens: list):
         self.tokens = tokens
         self.index = 0
-        self.code = []
+        self.func_segments = {}    # function name: function_segment
+        self.current_function: list
         self.had_err = False
 
     def parse_error(self, error_msg):
@@ -15,7 +16,7 @@ class _Parser:
         raise RuntimeError()
     
     def emit_op(self, op):
-        self.code.append(op)
+        self.current_function.append(op)
 
     def at_end(self):
         return self.peek().tok_type == TokenType.EOF
@@ -33,19 +34,36 @@ class _Parser:
             if self.match(TokenType.NEWLINE):
                 continue
             try:
-                self.statement()
+                self.function_declaration()
             except RuntimeError:
                 self.synchronize()
     
     def synchronize(self):
         self.advance()
         while not self.at_end():
-            # if self.previous().tok_type == TokenType.NEWLINE:
-            #     return
-            # if self.peek().tok_type == TokenType.NEWLINE:
-            #     return
+            if self.check(TokenType.FUNC):
+                return
 
             self.advance()
+        
+    def function_declaration(self):
+        self.consume(TokenType.FUNC, "Expect all toplevel code to be function declarations.")
+        if not self.match(TokenType.IDENTIFIER):
+            self.parse_error()
+
+        iden = self.previous().lexeme
+        self.current_function = []
+
+        self.consume(TokenType.LEFT_BRACE, "Expect `{` after after function name.")
+        self.block()
+
+        # # temp change
+        # # --------------------- 
+        # self.emit_op(OpCode.NULL)
+        # self.emit_op(OpCode.RET)
+        # # ----------------------
+
+        self.func_segments[iden] = self.current_function
 
     def statement(self):
         if (self.match(TokenType.NEWLINE)):
@@ -57,8 +75,14 @@ class _Parser:
         elif self.match(TokenType.WHILE):
             self.while_statement()
         elif self.match(TokenType.IDENTIFIER):
-            self.assignment()
+            iden = self.previous()
+            if self.match(TokenType.LEFT_PAREN):
+                self.call(iden.lexeme)
+            else:
+                self.assignment()
 
+        elif self.match(TokenType.RETURN):
+            self.return_statement()
 
         else:
             self.parse_error(f'Unexpected token `{self.peek().lexeme}`. Expected statement.')
@@ -73,14 +97,14 @@ class _Parser:
         
         self.emit_op(OpCode.JUMP_FALSE)
         self.emit_op(-1)        # placeholder offset
-        start_index = len(self.code)
+        start_index = len(self.current_function)
 
         self.consume(TokenType.LEFT_BRACE, "Expect '{' after if.")
         self.block()
 
         self.emit_op(OpCode.JUMP)
         self.emit_op(-1)
-        after_if = len(self.code)
+        after_if = len(self.current_function)
 
         if self.match(TokenType.ELSE):
             self.back_patch(start_index)
@@ -94,14 +118,14 @@ class _Parser:
         self.back_patch(after_if)
             
     def back_patch(self, start_index):
-        end_index = len(self.code)
-        self.code[end_index - (end_index - start_index) - 1] = end_index - start_index
+        end_index = len(self.current_function)
+        self.current_function[end_index - (end_index - start_index) - 1] = end_index - start_index
 
     def block(self):
         while not self.at_end() and not self.check(TokenType.RIGHT_BRACE):
             self.statement()
         
-        self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close block.")
+        self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close body.")
     
     def print_statement(self):
         self.expression()
@@ -113,7 +137,6 @@ class _Parser:
         self.consume(TokenType.EQUAL, f"Expect `=` after identifier `{identifier.lexeme}`.")
 
         if self.match(TokenType.LEFT_BRACKET):
-            # parse list
             self.list()    
         else:
             self.expression()
@@ -121,14 +144,6 @@ class _Parser:
         self.emit_op(OpCode.IDENTIFIER)            
         self.emit_op(identifier.lexeme)
         self.emit_op(OpCode.ASSIGNMENT)
-
-
-        # identifier = self.previous()
-        # self.consume(TokenType.EQUAL, f"Expect `=` after identifier `{identifier.lexeme}`.")
-        # self.expression()
-        # self.emit_op(OpCode.IDENTIFIER)            
-        # self.emit_op(identifier.lexeme)
-        # self.emit_op(OpCode.ASSIGNMENT)
     
     def list(self):
         list_items_count = 0
@@ -156,19 +171,26 @@ class _Parser:
             self.expression()
 
     def while_statement(self):
-        condition_index = len(self.code)    
+        condition_index = len(self.current_function)    
         self.expression()
         self.consume(TokenType.LEFT_BRACE, "Expect `{` after while keyword.")
 
         self.emit_op(OpCode.JUMP_FALSE)
         self.emit_op(-1)    # placeholder
-        jump_false_index = len(self.code)
+        jump_false_index = len(self.current_function)
 
         self.block()
         self.emit_op(OpCode.LOOP)
 
-        self.emit_op(len(self.code) - condition_index)        
+        self.emit_op(len(self.current_function) - condition_index)        
         self.back_patch(jump_false_index)
+    
+    def return_statement(self):
+        if self.check(TokenType.NEWLINE) or self.check(TokenType.RIGHT_BRACE):
+            self.emit_op(OpCode.NULL)
+        else:
+            self.expression()
+        self.emit_op(OpCode.RET)
     
     def match(self, *token_types):
         for tok_type in token_types:
@@ -192,6 +214,12 @@ class _Parser:
         
     def peek(self):
         return self.tokens[self.index]
+    
+    def call(self, iden: str):
+        self.consume(TokenType.RIGHT_PAREN, "Expect `)` after function call.")
+        self.emit_op(OpCode.IDENTIFIER)
+        self.emit_op(iden)
+        self.emit_op(OpCode.CALL)
 
     def expression(self):
         self.Or()
@@ -304,7 +332,12 @@ class _Parser:
             self.emit_op(OpCode.STRING)
             self.emit_op(token.lexeme)
         elif self.match(TokenType.IDENTIFIER):
-            self.resolve_var()
+            if self.check(TokenType.LEFT_PAREN):
+                iden = self.previous().lexeme
+                self.consume(TokenType.LEFT_PAREN, "")
+                self.call(iden)
+            else:
+                self.resolve_var()
 
         elif self.match(TokenType.EOF):
             return
@@ -332,8 +365,11 @@ class _Parser:
         self.consume(TokenType.RIGHT_BRACKET, "Expect `]` after subscript.")
     
     def print_code(self):
-        for op in self.code:
-            print(op)
+        for func_name in self.func_segments:
+            print(func_name + ":")
+            for op in self.func_segments[func_name]:
+                print('\t', op)
+            print('-' * 60)
 
 
 def parse(tokens: list):
@@ -344,8 +380,10 @@ def parse(tokens: list):
     # parser.print_code()
     # print('*' * 50)
     # print('\n')
+    # sys.exit(0)
+
 
     if parser.had_err:
         sys.exit(0)
 
-    return parser.code
+    return parser.func_segments
