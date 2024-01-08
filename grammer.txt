@@ -86,19 +86,4 @@ GROUPING    := '(' EXPR ')'
 
 --------------------------------------------------------------------------------------
 
-iden
-lexeme
-resolve
-subscript
-index
-
-    resolve: 
-        if peek(stack) is subscript:
-            index = pop()
-
-
-stack
-[]
-[list]
-[23]
 
