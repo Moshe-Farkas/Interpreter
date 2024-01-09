@@ -210,6 +210,17 @@ class Func_obj:
         if not isinstance(amount, float):
             raise RuntimeError(f"Sleep duration must by of type `number` not `{type(amount).__name__}`.")
         time.sleep(amount)
+    
+    def append(self):
+        iden = self.operand_stack.pop()
+        value = self.operand_stack.pop()
+        if iden not in self.locals:
+            raise RuntimeError(f"Undefined variable `{iden}`.")
+        list_obj = self.locals[iden]
+        if not isinstance(list_obj, list):
+            raise RuntimeError(f"Can't subscript expression " +
+                               f"of type `{type(list_obj).__name__}`")
+        list_obj.append(value)
 
 
 class VM:
@@ -270,7 +281,6 @@ class VM:
                     func_obj.resolve()
                 case OpCode.ASSIGNMENT:
                     func_obj.assignment()
-
                 case OpCode.LIST:
                     func_obj.list()
                 case OpCode.JUMP_FALSE:
@@ -285,6 +295,8 @@ class VM:
                     func_obj.operand_stack.append(ret_value)
                 case OpCode.SLEEP:
                     func_obj.sleep()
+                case OpCode.APPEND:
+                    func_obj.append()
                 case OpCode.RET:
                     return func_obj.ret()
 

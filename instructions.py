@@ -31,3 +31,4 @@ class OpCode(Enum):
     RET           = auto()
     CALL          = auto()
     SLEEP         = auto()
+    APPEND        = auto()

@@ -104,6 +104,8 @@ class _Parser:
             self.return_statement()
         elif self.match(TokenType.SLEEP):
             self.sleep_statement()
+        elif self.match(TokenType.APPEND):
+            self.append_statement()
 
         else:
             self.parse_error(f'Unexpected token `{self.peek().lexeme}`. Expected statement.')
@@ -226,6 +228,14 @@ class _Parser:
     def sleep_statement(self):
         self.expression()
         self.emit_op(OpCode.SLEEP)
+    
+    def append_statement(self):
+        self.consume(TokenType.IDENTIFIER, "Expect identifier after append.")
+        iden = self.previous()
+        self.expression()
+        self.emit_op(OpCode.IDENTIFIER)
+        self.emit_op(iden.lexeme)
+        self.emit_op(OpCode.APPEND)
     
     def match(self, *token_types):
         for tok_type in token_types:
