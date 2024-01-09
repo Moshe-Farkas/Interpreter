@@ -40,6 +40,7 @@ class TokenType(Enum):
 
     # temp 
     PRINT           = auto()
+    PRINTLN         = auto()
 
 
 class Token:
@@ -61,16 +62,17 @@ class Token:
 
 class _Lexer:
     keywords = {
-        "print":  TokenType.PRINT,
-        "if":     TokenType.IF,
-        "else":   TokenType.ELSE,
-        "false":  TokenType.FALSE,
-        "true":   TokenType.TRUE,
-        "not":    TokenType.NOT,
-        "while":  TokenType.WHILE,
-        "func":   TokenType.FUNC,
-        "null":   TokenType.NULL,
-        "return": TokenType.RETURN
+        "print":   TokenType.PRINT,
+        "println": TokenType.PRINTLN,
+        "if":      TokenType.IF,
+        "else":    TokenType.ELSE,
+        "false":   TokenType.FALSE,
+        "true":    TokenType.TRUE,
+        "not":     TokenType.NOT,
+        "while":   TokenType.WHILE,
+        "func":    TokenType.FUNC,
+        "null":    TokenType.NULL,
+        "return":  TokenType.RETURN
     }
 
     def __init__(self, source: str):

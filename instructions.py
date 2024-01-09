@@ -23,6 +23,7 @@ class OpCode(Enum):
     JUMP          = auto()
     LOOP          = auto()
     PRINT         = auto()
+    PRINTLN       = auto()
     ASSIGNMENT    = auto()
     LIST          = auto()
     SUBSCRIPT     = auto()

@@ -90,7 +90,7 @@ class _Parser:
             return
         if self.match(TokenType.IF):
             self.if_statement()
-        elif self.match(TokenType.PRINT):
+        elif self.match(TokenType.PRINT, TokenType.PRINTLN):
             self.print_statement()
         elif self.match(TokenType.WHILE):
             self.while_statement()
@@ -147,8 +147,13 @@ class _Parser:
         self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close body.")
     
     def print_statement(self):
+        print_type = self.previous()
         self.expression()
-        self.emit_op(OpCode.PRINT)
+        match print_type.tok_type:
+            case TokenType.PRINT:
+                self.emit_op(OpCode.PRINT)         
+            case TokenType.PRINTLN:
+                self.emit_op(OpCode.PRINTLN)         
 
     def assignment(self):
         identifier = self.previous()
@@ -382,18 +387,24 @@ class _Parser:
         
     def resolve_var(self):
         iden = self.previous()
-        subscriptFlag = False
-        if self.match(TokenType.LEFT_BRACKET):
+        subcript_level = 0
+        while self.match(TokenType.LEFT_BRACKET):
             self.subscript()
-            subscriptFlag = True
+            subcript_level += 1
 
         self.emit_op(OpCode.IDENTIFIER)
         self.emit_op(iden.lexeme)
 
 
         self.emit_op(OpCode.RESOLVE)
-        if subscriptFlag:
+        
+        while subcript_level > 0:
             self.emit_op(OpCode.SUBSCRIPT)
+            subcript_level -= 1 
+        
+
+        # if subscriptFlag:
+        #     self.emit_op(OpCode.SUBSCRIPT)
     
     def subscript(self):
         self.expression()

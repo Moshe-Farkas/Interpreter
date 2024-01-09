@@ -72,7 +72,13 @@ class Func_obj:
         sub(a, b)
     
     def print(self):
-        print(self.operand_stack.pop())
+        match self.current():
+            case OpCode.PRINT:
+                print(self.operand_stack.pop(), end='')
+            
+            case OpCode.PRINTLN:
+                print(self.operand_stack.pop())
+
     
     def call(self):
         iden = self.operand_stack.pop()
@@ -83,6 +89,19 @@ class Func_obj:
     def push_next(self):
         self.inc_pointer(1)
         self.operand_stack.append(self.current())
+
+    def subscript(self, iden):
+        list_obj = self.locals[iden]
+        index = int(self.operand_stack.pop())
+
+        # while self.peek_code(1) == OpCode.SUBSCRIPT:
+        #     index = int(self.operand_stack.pop())
+        #     list_obj = list_obj[index]
+        #     self.inc_pointer(1)
+
+        return list_obj, index
+
+
     
     def resolve(self):
         iden = self.operand_stack.pop()
@@ -90,39 +109,56 @@ class Func_obj:
             raise RuntimeError(f"Undefined variable `{iden}`.")
         else:
             if self.peek_code(1) == OpCode.SUBSCRIPT:
-                if not isinstance(self.locals[iden], list):
-                    raise RuntimeError(f"Can't subscript expression " +
-                                       f"of type `{type(self.locals[iden]).__name__}`")
-                index = self.operand_stack.pop()
-                if not isinstance(index, float):
-                    raise RuntimeError(f"Can't use exression of type `{type(index).__name__}` " +
-                                        f"to subscript `{iden}`.")
-                index = int(index) 
-                if index >= len(self.locals[iden]) or index < 0:
-                    raise RuntimeError(f"Index `{index}` out of bounds " + 
-                                       f"for list of length `{len(self.locals[iden])}`.")
-                self.operand_stack.append(self.locals[iden][index])
+                list_obj, index = self.subscript(iden)
+                self.operand_stack.append(list_obj[index])
+
+
+
+
+                # if not isinstance(self.locals[iden], list):
+                #     raise RuntimeError(f"Can't subscript expression " +
+                #                        f"of type `{type(self.locals[iden]).__name__}`")
+                # index = self.operand_stack.pop()
+                # if not isinstance(index, float):
+                #     raise RuntimeError(f"Can't use exression of type `{type(index).__name__}` " +
+                #                         f"to subscript `{iden}`.")
+                # index = int(index) 
+                # if index >= len(self.locals[iden]) or index < 0:
+                #     raise RuntimeError(f"Index `{index}` out of bounds " + 
+                #                        f"for list of length `{len(self.locals[iden])}`.")
+                # self.operand_stack.append(self.locals[iden][index])
+
+
+
             else:
                 self.operand_stack.append(self.locals[iden])
     
     def assignment(self):
         iden = self.operand_stack.pop()
         if self.peek_code(1) == OpCode.SUBSCRIPT:
-            if not isinstance(self.locals[iden], list):
-                raise RuntimeError(f"Can't subscript expression " +
-                                    f"of type `{type(self.locals[iden]).__name__}`")
-
             value = self.operand_stack.pop()
+            list_obj, index = self.subscript(iden)
+            list_obj[index] = value
 
-            index = self.operand_stack.pop()
-            if not isinstance(index, float):
-                raise RuntimeError(f"Can't use exression of type `{type(index).__name__}` " +
-                                    f"to subscript `{iden}`.")
-            index = int(index)
-            if index >= len(self.locals[iden]) or index < 0:
-                raise RuntimeError(f"Index `{index}` out of bounds " + 
-                                    f"for list of length `{len(self.locals[iden])}`.")
-            self.locals[iden][index] = value
+
+            # if not isinstance(self.locals[iden], list):
+            #     raise RuntimeError(f"Can't subscript expression " +
+            #                         f"of type `{type(self.locals[iden]).__name__}`")
+
+            # value = self.operand_stack.pop()
+
+            # index = self.operand_stack.pop()
+            # if not isinstance(index, float):
+            #     raise RuntimeError(f"Can't use exression of type `{type(index).__name__}` " +
+            #                         f"to subscript `{iden}`.")
+            # index = int(index)
+            # if index >= len(self.locals[iden]) or index < 0:
+            #     raise RuntimeError(f"Index `{index}` out of bounds " + 
+            #                         f"for list of length `{len(self.locals[iden])}`.")
+            # self.locals[iden][index] = value
+
+
+
         else:
             value = self.operand_stack.pop()
             self.locals[iden] = value
@@ -244,7 +280,7 @@ class VM:
                     func_obj.Not()
                 case OpCode.STRING | OpCode.IDENTIFIER | OpCode.NUMBER:
                     func_obj.push_next()
-                case OpCode.PRINT:
+                case OpCode.PRINT | OpCode.PRINTLN:
                     func_obj.print()
                 case OpCode.RESOLVE:
                     func_obj.resolve()
