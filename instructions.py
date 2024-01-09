@@ -30,3 +30,4 @@ class OpCode(Enum):
     RESOLVE       = auto()
     RET           = auto()
     CALL          = auto()
+    SLEEP         = auto()

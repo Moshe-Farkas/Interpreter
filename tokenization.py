@@ -37,10 +37,9 @@ class TokenType(Enum):
     FUNC            = auto()
     RETURN          = auto()
     EOF             = auto()
-
-    # temp 
     PRINT           = auto()
     PRINTLN         = auto()
+    SLEEP           = auto()
 
 
 class Token:
@@ -72,7 +71,8 @@ class _Lexer:
         "while":   TokenType.WHILE,
         "func":    TokenType.FUNC,
         "null":    TokenType.NULL,
-        "return":  TokenType.RETURN
+        "return":  TokenType.RETURN,
+        "sleep":   TokenType.SLEEP
     }
 
     def __init__(self, source: str):
@@ -146,6 +146,7 @@ class _Lexer:
 
         if self.at_end():
             print('Unterminated string.')
+            print("Line:", self.current_line)
             sys.exit(0)
 
         return self.new_token(TokenType.STRING, literal)

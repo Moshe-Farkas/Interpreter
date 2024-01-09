@@ -33,7 +33,7 @@ class _Parser:
         return self.peek().tok_type == tok_type
     
     def expect_newline(self):
-        self.consume(TokenType.NEWLINE, 'Expect newline after statement.')
+        self.consume(TokenType.NEWLINE, f"Expect newline after statement. Not `{self.peek().lexeme}`.")
 
     def parse(self):
         while not self.at_end():
@@ -100,9 +100,10 @@ class _Parser:
                 self.call(iden.lexeme)
             else:
                 self.assignment()
-
         elif self.match(TokenType.RETURN):
             self.return_statement()
+        elif self.match(TokenType.SLEEP):
+            self.sleep_statement()
 
         else:
             self.parse_error(f'Unexpected token `{self.peek().lexeme}`. Expected statement.')
@@ -157,10 +158,10 @@ class _Parser:
 
     def assignment(self):
         identifier = self.previous()
-        subscript_flag = True if self.match(TokenType.LEFT_BRACKET) else False
-        if subscript_flag:
+        subscript_level = 0
+        while self.match(TokenType.LEFT_BRACKET):
             self.subscript()
-
+            subscript_level += 1
         self.consume(TokenType.EQUAL, f"Expect `=` after identifier `{identifier.lexeme}`.")
 
         if self.match(TokenType.LEFT_BRACKET):
@@ -171,8 +172,9 @@ class _Parser:
         self.emit_op(OpCode.IDENTIFIER)            
         self.emit_op(identifier.lexeme)
         self.emit_op(OpCode.ASSIGNMENT)
-        if subscript_flag:
+        while subscript_level > 0:
             self.emit_op(OpCode.SUBSCRIPT)
+            subscript_level -= 1
     
     def list(self):
         list_items_count = 0
@@ -220,6 +222,10 @@ class _Parser:
         else:
             self.expression()
         self.emit_op(OpCode.RET)
+    
+    def sleep_statement(self):
+        self.expression()
+        self.emit_op(OpCode.SLEEP)
     
     def match(self, *token_types):
         for tok_type in token_types:
@@ -402,10 +408,6 @@ class _Parser:
             self.emit_op(OpCode.SUBSCRIPT)
             subcript_level -= 1 
         
-
-        # if subscriptFlag:
-        #     self.emit_op(OpCode.SUBSCRIPT)
-    
     def subscript(self):
         self.expression()
         self.consume(TokenType.RIGHT_BRACKET, "Expect `]` after subscript.")
