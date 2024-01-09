@@ -32,3 +32,4 @@ class OpCode(Enum):
     CALL          = auto()
     SLEEP         = auto()
     APPEND        = auto()
+    CLRSCRN       = auto()

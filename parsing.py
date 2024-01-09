@@ -106,6 +106,8 @@ class _Parser:
             self.sleep_statement()
         elif self.match(TokenType.APPEND):
             self.append_statement()
+        elif self.match(TokenType.CLRSCRN):
+            self.emit_op(OpCode.CLRSCRN)
 
         else:
             self.parse_error(f'Unexpected token `{self.peek().lexeme}`. Expected statement.')
@@ -379,6 +381,8 @@ class _Parser:
             self.emit_op(OpCode.FALSE)
         elif self.match(TokenType.TRUE):
             self.emit_op(OpCode.TRUE)
+        elif self.match(TokenType.NULL):
+            self.emit_op(OpCode.NULL)
         elif self.match(TokenType.NUMBER):
             token = self.previous()
             self.emit_op(OpCode.NUMBER)

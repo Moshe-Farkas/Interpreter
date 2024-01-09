@@ -2,7 +2,7 @@ from instructions import OpCode
 from parsing import FunctionDeclaration
 import time
 
-import sys
+import os
 
 class Func_obj:
     def __init__(self, code_segment: list, params: list):
@@ -79,12 +79,11 @@ class Func_obj:
             
             case OpCode.PRINTLN:
                 print(self.operand_stack.pop())
-
+    
     def call(self):
         iden = self.operand_stack.pop()
         args = self.operand_stack.pop()
         return (iden, args)
-        # return self.operand_stack.pop()
 
     def push_next(self):
         self.inc_pointer(1)
@@ -277,6 +276,8 @@ class VM:
                     func_obj.push_next()
                 case OpCode.PRINT | OpCode.PRINTLN:
                     func_obj.print()
+                case OpCode.CLRSCRN:
+                    os.system('clear')    
                 case OpCode.RESOLVE:
                     func_obj.resolve()
                 case OpCode.ASSIGNMENT:

@@ -41,6 +41,7 @@ class TokenType(Enum):
     PRINTLN         = auto()
     SLEEP           = auto()
     APPEND          = auto()
+    CLRSCRN         = auto()
 
 
 class Token:
@@ -74,7 +75,8 @@ class _Lexer:
         "null":    TokenType.NULL,
         "return":  TokenType.RETURN,
         "sleep":   TokenType.SLEEP,
-        "append":   TokenType.APPEND
+        "append":  TokenType.APPEND,
+        "clrscrn": TokenType.CLRSCRN,
     }
 
     def __init__(self, source: str):
