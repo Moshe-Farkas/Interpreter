@@ -107,8 +107,25 @@ class Func_obj:
     
     def assignment(self):
         iden = self.operand_stack.pop()
-        value = self.operand_stack.pop()
-        self.locals[iden] = value
+        if self.peek_code(1) == OpCode.SUBSCRIPT:
+            if not isinstance(self.locals[iden], list):
+                raise RuntimeError(f"Can't subscript expression " +
+                                    f"of type `{type(self.locals[iden]).__name__}`")
+
+            value = self.operand_stack.pop()
+
+            index = self.operand_stack.pop()
+            if not isinstance(index, float):
+                raise RuntimeError(f"Can't use exression of type `{type(index).__name__}` " +
+                                    f"to subscript `{iden}`.")
+            index = int(index)
+            if index >= len(self.locals[iden]) or index < 0:
+                raise RuntimeError(f"Index `{index}` out of bounds " + 
+                                    f"for list of length `{len(self.locals[iden])}`.")
+            self.locals[iden][index] = value
+        else:
+            value = self.operand_stack.pop()
+            self.locals[iden] = value
 
     def list(self):
         self.inc_pointer(1)
@@ -174,6 +191,7 @@ class Func_obj:
     def loop(self):
         self.ip -= self.code_segment[self.ip + 1]
 
+
 class VM:
     def __init__(self, func_decls: {}):
         self.func_decls = func_decls
@@ -184,11 +202,12 @@ class VM:
             self.run_stack_frame('main', [])
         except RuntimeError as e:
             print("Runtime error: ", e)
-            print('-' * 50)
-            print(self.call_trace_stack)
-
-
-        print('\n::: finished.')
+            self.print_stack_trace()
+    
+    def print_stack_trace(self):
+        print("Stack trace:")
+        for frame in self.call_trace_stack:
+            print(f"\t <{frame}>")
 
     def run_stack_frame(self, func_name: str, func_args: list):
         if func_name not in self.func_decls:
@@ -251,127 +270,6 @@ class VM:
 
             func_obj.inc_pointer(1)
 
-
-# def interpret(code_segment: list):
-#     stack = []
-#     globals = {}
-#     i = 0
-
-#     def peek_code(distance):
-#         if i + distance >= len(code_segment):
-#             return None
-#         return code_segment[i + distance]
-
-#     while i < len(code_segment):
-#         op = code_segment[i]
-#         match op:
-#             case OpCode.NUMBER: 
-#                 i += 1
-#                 stack.append(code_segment[i])
-#             case OpCode.STRING: 
-#                 i += 1
-#                 stack.append(code_segment[i])
-#             case OpCode.IDENTIFIER: 
-#                 i += 1
-#                 stack.append(code_segment[i])
-#             case OpCode.TRUE:
-#                 stack.append(True)
-#             case OpCode.FALSE:
-#                 stack.append(False)
-#             case OpCode.SUB:
-#                 b = stack.pop()
-#                 a = stack.pop()
-#                 stack.append(sub(a, b))
-#             case OpCode.ADD:
-#                 b = stack.pop()
-#                 a = stack.pop()
-#                 stack.append(add(a, b))
-#             case OpCode.MUL:
-#                 b = stack.pop()
-#                 a = stack.pop()
-#                 stack.append(mul(a, b))
-#             case OpCode.DIV:
-#                 b = stack.pop()
-#                 a = stack.pop()
-#                 stack.append(div(a, b))
-#             case OpCode.MODULO:
-#                 b = stack.pop()
-#                 a = stack.pop()
-#                 stack.append(mod(a, b))
-#             case OpCode.NEGATION:
-#                 a = stack.pop()
-#                 stack.append(negate(a))
-#             case OpCode.EQUAL_EQUAL:
-#                 stack.append(stack.pop() == stack.pop())
-#             case OpCode.NOT:
-#                 operand = stack.pop()
-#                 if not isinstance(operand, bool):
-#                     raise RuntimeError(f"Can't logic negate instance of type `{type(operand).__name__}`.")
-#                 else:
-#                     stack.append(not operand)
-#             case OpCode.GREATER:
-#                 b = stack.pop()
-#                 a = stack.pop()
-#                 stack.append(comparision(a, b, '>'))
-#             case OpCode.GREATER_EQUAL:
-#                 b = stack.pop()
-#                 a = stack.pop()
-#                 stack.append(comparision(a, b, '>='))
-#             case OpCode.LESS:
-#                 b = stack.pop()
-#                 a = stack.pop()
-#                 stack.append(comparision(a, b, '<'))
-#             case OpCode.LESS_EQUAL:
-#                 b = stack.pop()
-#                 a = stack.pop()
-#                 stack.append(comparision(a, b, '<='))
-#             case OpCode.JUMP_FALSE:
-#                 condition = stack.pop()
-#                 if not isinstance(condition, bool):
-#                     raise RuntimeError(f"Condition can't be of type `{type(condition).__name__}`.")
-#                 if condition == True:
-#                     i += 1
-#                 else:
-#                     i += code_segment[i + 1] + 1
-#             case OpCode.JUMP:
-#                 i += code_segment[i + 1] + 1
-#             case OpCode.LOOP:
-#                 i -= code_segment[i + 1]
-#             case OpCode.ASSIGNMENT:
-#                 iden = stack.pop()
-#                 value = stack.pop()
-#                 globals[iden] = value
-
-#             case OpCode.RESOLVE:
-#                 iden = stack.pop()
-#                 if iden not in globals:
-#                     raise RuntimeError(f"Undefined variable `{iden}`.")
-#                 else:
-#                     if peek_code(1) == OpCode.SUBSCRIPT:
-#                         index = stack.pop()
-#                         if not isinstance(index, float):
-#                             raise RuntimeError(f"Can't use exression of type `{type(index).__name__}` " +
-#                                                 "to subscript `{iden}`.")
-#                         index = int(index) 
-#                         if index >= len(globals[iden]) or index < 0:
-#                             raise RuntimeError(f"Index `{index}` out of bounds " + 
-#                                                 "for list of length `{len(globals[iden])}`.")
-#                         stack.append(globals[iden][index])
-#                     else:
-#                         stack.append(globals[iden])
-                
-#             case OpCode.LIST:
-#                 i += 1
-#                 list_items_count = code_segment[i]
-#                 list_object = [stack.pop() for i in range(list_items_count)]
-#                 list_object.reverse()
-#                 stack.append(list_object)
-
-#             case OpCode.PRINT:
-#                 print(stack.pop())
-
-#         i += 1 
-    
 
 def comparision(a, b, op):
     if not (isinstance(a, float) and isinstance(b, float)):

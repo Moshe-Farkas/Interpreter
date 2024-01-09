@@ -112,7 +112,6 @@ class _Parser:
             self.expect_newline()
     
     def if_statement(self):
-        # compile condition
         self.expression()
         
         self.emit_op(OpCode.JUMP_FALSE)
@@ -153,6 +152,9 @@ class _Parser:
 
     def assignment(self):
         identifier = self.previous()
+        subscript_flag = True if self.match(TokenType.LEFT_BRACKET) else False
+        if subscript_flag:
+            self.subscript()
 
         self.consume(TokenType.EQUAL, f"Expect `=` after identifier `{identifier.lexeme}`.")
 
@@ -164,6 +166,8 @@ class _Parser:
         self.emit_op(OpCode.IDENTIFIER)            
         self.emit_op(identifier.lexeme)
         self.emit_op(OpCode.ASSIGNMENT)
+        if subscript_flag:
+            self.emit_op(OpCode.SUBSCRIPT)
     
     def list(self):
         list_items_count = 0
